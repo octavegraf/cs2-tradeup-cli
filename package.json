@@ -14,9 +14,11 @@
     "colors": "^1.4.0",
     "follow-redirects": "^1.15.3",
     "jsdom": "^16.7.0",
-    "mongoose": "^5.13.6",
+    "mongoose": "^5.13.23",
     "node-worker-threads-pool": "^1.5.1",
-    "playwright": "^1.16.3"
+    "playwright": "^1.16.3",
+    "puppeteer": "^24.4.0",
+    "selenium-webdriver": "^4.29.0"
   },
   "importSorter": {
     "autoFormat": "onSave",
