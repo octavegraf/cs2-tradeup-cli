@@ -9,23 +9,6 @@ import Source from './models/source.js';
 import { getArgs } from './utils/args.js';
 import { getHighestRarity, rarityToNumber } from './utils/rarity.js';
 
-import puppeteer from 'puppeteer';
-
-const scrapeWithPuppeteer = async (url) => {
-    const browser = await puppeteer.launch({ headless: "new" }); // Utilise `false` pour voir ce qu'il se passe
-    const page = await browser.newPage();
-
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-
-    console.log(`🕵️ Scraping : ${url}`);
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    const content = await page.content();
-    await browser.close();
-
-    return content;
-};
-
 const scrapeUrl = (url) => {
     return new Promise((resolve, reject) => {
         let client = http;
@@ -55,34 +38,25 @@ const scrapeUrl = (url) => {
 
 async function getGunsSources() {
     let res = [];
-    let scraped = await scrapeUrl("https://stash.clash.gg");
-    console.log("HTML récupéré:", scraped); // Ajout du log pour afficher le HTML complet
+    let scraped = await scrapeUrl("https://csgostash.com/");
     let dom = new jsdom.JSDOM(scraped);
+    let all = [...dom.window.document.getElementsByClassName("navbar-nav")[0].children]
+    Array.prototype.slice.call(all).map((p, i) => {
+        if(i != 6 && i != 7) return; // only leave the relevant drop downs menues and skip knives
+        [...p.children[1].children].map(e => {
+            if(e.children.length > 0){
+                let temp = { url:'', source:'' }
+                temp.url = (e.children[0].href);
+                temp.source = e.children[0].textContent.trim();
+                
+                if(temp.source == "All Skin Cases" ||
+                   temp.source == "Souvenir Packages" ||
+                   temp.source == "Gift Packages") return;
 
-    let navTabs = dom.window.document.getElementsByClassName("desktop-nav-tabs");
-    console.log("NavTabs trouvé:", navTabs.length); // Log pour vérifier si l'élément est trouvé
-    if (navTabs.length > 0) {
-        let all = [...navTabs[0].children];
-        Array.prototype.slice.call(all).map((p, i) => {
-            if(i != 6 && i != 7) return; // only leave the relevant drop downs menues and skip knives
-            [...p.children[1].children].map(e => {
-                if(e.children.length > 0){
-                    let temp = { url:'', source:'' }
-                    temp.url = (e.children[0].href);
-                    temp.source = e.children[0].textContent.trim();
-                    
-                    if(temp.source == "All Skin Cases" ||
-                       temp.source == "Souvenir Packages" ||
-                       temp.source == "Gift Packages") return;
-
-                    res.push(temp);
-                }
-            });
+                res.push(temp);
+            }
         });
-    } else {
-        console.log("Element 'desktop-nav-tabs' not findable. Skipping...");
-    }
-
+    });
     return res;
 }
 
@@ -98,7 +72,7 @@ async function getGunsData(){
 
 async function gunScrape(url){
     let res = [];
-    let scraped = await scrapeWithPuppeteer(url);
+    let scraped = await scrapeUrl(url);
     let dom = new jsdom.JSDOM(scraped);
     let boxes = [...dom.window.document.getElementsByClassName('result-box')];
     let allRarities = [...dom.window.document.getElementsByClassName('quality')];
@@ -171,7 +145,7 @@ async function advancedGunScrape(url){
         CSGO_STASH_NAME: url.split('/')[5]
     };
 
-    let scraped = await scrapeWithPuppeteer(url);
+    let scraped = await scrapeUrl(url);
     let dom = new jsdom.JSDOM(scraped);
 
     // get min and max wear values
